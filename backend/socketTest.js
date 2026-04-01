@@ -166,4 +166,4 @@ const prompt = () => {
 }
 
 console.log("🚀 Socket.IO Test Client")
-console.log("📡 Connecting to http://localhost:5000...\n")
+console.log("📡 Connecting to http://localhost:3000...\n")

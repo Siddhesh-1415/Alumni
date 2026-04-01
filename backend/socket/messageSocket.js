@@ -1,17 +1,34 @@
 import Message from "../models/Message.js"
 import User from "../models/User.js"
+import { createAndEmitNotification } from "../controllers/notificationController.js"
 
 // Store active users and their socket IDs
-const activeUsers = new Map()
+export const activeUsers = new Map()
+
+// Dynamic configuration
+const getSocketConfig = () => ({
+  cors: {
+    origin: process.env.CORS_ORIGIN || "*",
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
+  pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000,
+})
 
 export const initializeMessageSocket = (io) => {
+  const config = getSocketConfig()
+
   io.on("connection", (socket) => {
     console.log(`✅ User connected: ${socket.id}`)
 
     // User comes online
     socket.on("user_online", (userId) => {
       activeUsers.set(userId, socket.id)
-      
+
+      // Join private notification room
+      socket.join(`user:${userId}`)
+
       // Notify all users about online status
       io.emit("user_status", {
         userId,
@@ -26,6 +43,13 @@ export const initializeMessageSocket = (io) => {
       try {
         const { senderId, receiverId, message } = data
 
+        // Validate message length
+        const maxLength = parseInt(process.env.MAX_MESSAGE_LENGTH) || 1000
+        if (message.length > maxLength) {
+          socket.emit("message_error", { error: `Message too long. Max ${maxLength} characters.` })
+          return
+        }
+
         // Save message to database
         const newMessage = await Message.create({
           sender: senderId,
@@ -36,12 +60,12 @@ export const initializeMessageSocket = (io) => {
 
         // Fetch with populated references
         const populatedMessage = await Message.findById(newMessage._id)
-          .populate("sender", "name email profile_pic")
-          .populate("receiver", "name email profile_pic")
+          .populate("sender", "name email profile_pic role")
+          .populate("receiver", "name email profile_pic role")
 
         // Send to receiver's socket if online
         const receiverSocket = activeUsers.get(receiverId)
-        
+
         if (receiverSocket) {
           // Send directly to receiver
           io.to(receiverSocket).emit("receive_message", {
@@ -53,6 +77,20 @@ export const initializeMessageSocket = (io) => {
             read: populatedMessage.read
           })
         }
+
+        // Create a persistent new_message notification for the receiver
+        // (the receiver's chat UI will suppress it if they're actively viewing this conversation)
+        await createAndEmitNotification({
+          io,
+          recipient: receiverId,
+          type: 'new_message',
+          message: `New message from ${populatedMessage.sender.name}`,
+          senderId: populatedMessage.sender._id,
+          meta: {
+            senderName: populatedMessage.sender.name,
+            preview: populatedMessage.message.substring(0, 60)
+          }
+        })
 
         // Send confirmation to sender
         socket.emit("message_sent", {
@@ -96,7 +134,7 @@ export const initializeMessageSocket = (io) => {
     socket.on("typing", (data) => {
       const { senderId, receiverId } = data
       const receiverSocket = activeUsers.get(receiverId)
-      
+
       if (receiverSocket) {
         io.to(receiverSocket).emit("user_typing", {
           userId: senderId
@@ -108,7 +146,7 @@ export const initializeMessageSocket = (io) => {
     socket.on("stop_typing", (data) => {
       const { senderId, receiverId } = data
       const receiverSocket = activeUsers.get(receiverId)
-      
+
       if (receiverSocket) {
         io.to(receiverSocket).emit("user_stop_typing", {
           userId: senderId

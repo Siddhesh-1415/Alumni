@@ -277,7 +277,7 @@ npm start
 node socketTest.js
 
 # Terminal 3: Test REST API (using curl or Postman)
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password"}'
 ```

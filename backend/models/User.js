@@ -2,16 +2,18 @@ import mongoose from "mongoose"
 
 const userSchema = new mongoose.Schema({
 
+uid:{
+  type:String,
+  unique:true,
+  required:true,
+  trim:true
+},
+
 college_id:{
   type:String,
   unique:true,
   sparse:true
 },
-
- name:{
-  type:String,
-  required:true
- },
 
  email:{
   type:String,
@@ -25,6 +27,10 @@ college_id:{
   type:String,
   required:true
 },
+
+ name:{
+  type:String
+ },
 
  role:{
   type:String,

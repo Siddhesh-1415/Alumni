@@ -8,9 +8,13 @@ const authorizeRoles = (...roles)=>{
    })
   }
 
-  if(!roles.includes(req.user.role)){
+  const userRole = String(req.user.role || "").trim().toLowerCase()
+  const allowedRoles = roles.map((role) => String(role).trim().toLowerCase())
+
+  if (!allowedRoles.includes(userRole)) {
+   console.warn(`Role check failed in authorizeRoles: userRole='${req.user.role}' allowed=[${roles.join(', ')}]`) // helpful debug in backend
    return res.status(403).json({
-    message:"Access denied"
+    message: `Access denied: role '${req.user.role || "unknown"}' not allowed. Allowed roles: ${roles.join(', ')}`
    })
   }
 

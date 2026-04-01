@@ -5,7 +5,7 @@ import io from "socket.io-client"
 let socket = null
 
 export const initializeSocket = (userId) => {
-  socket = io("http://localhost:5000", {
+  socket = io("http://localhost:3000", {
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,

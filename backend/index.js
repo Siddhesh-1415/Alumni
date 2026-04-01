@@ -11,6 +11,8 @@ import eventRoutes from "./routes/eventRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import { initializeMessageSocket } from "./socket/messageSocket.js";
 
 // Load env variables
@@ -31,6 +33,8 @@ app.use("/api/events", eventRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/users", authRoutes);
 // Test Route
 app.get("/", (req, res) => {
@@ -46,9 +50,16 @@ const server = http.createServer(app);
 // 🔥 Socket Server
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: process.env.CORS_ORIGIN || "*",
+    methods: ["GET", "POST"],
+    credentials: true
   },
+  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
+  pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000,
 });
+
+// 🔥 Make io available to controllers
+app.set('io', io);
 
 // 🔥 Initialize Real-Time Messaging
 initializeMessageSocket(io);

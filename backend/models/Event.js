@@ -26,6 +26,12 @@ const eventSchema = new mongoose.Schema({
  created_by:{
   type:mongoose.Schema.Types.ObjectId,
   ref:"User"
+ },
+
+ registrations:{
+  type:[mongoose.Schema.Types.ObjectId],
+  ref:"User",
+  default:[]
  }
 
 },{timestamps:true})

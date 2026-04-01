@@ -276,7 +276,7 @@ Content-Type: application/json
 1. Install: `npm install -g socketio-client`
 2. Connect:
    ```bash
-   socketio-client http://localhost:5000
+   socketio-client http://localhost:3000
    ```
 3. Send event:
    ```
@@ -310,7 +310,7 @@ Content-Type: application/json
 
 ### Enable Socket logging
 ```javascript
-const socket = io("http://localhost:5000", {
+const socket = io("http://localhost:3000", {
   debug: true
 })
 ```

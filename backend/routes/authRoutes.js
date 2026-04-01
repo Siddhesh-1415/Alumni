@@ -3,6 +3,7 @@ import {
  registerUser,
  loginUser,
  searchAlumni,
+ getAllAlumni,
  registerOldAlumni,
     getProfile,
     updateProfile,
@@ -21,7 +22,10 @@ router.post("/register-old-alumni", registerOldAlumni)
 router.post("/login", loginUser)
 
 // search alumni
-router.post("/search-alumni", searchAlumni)
+router.get("/search-alumni", searchAlumni)
+
+// get all alumni
+router.get("/alumni", getAllAlumni)
 
 // get profile (protected)
 router.get("/profile", protect, getProfile)

@@ -6,200 +6,230 @@ import AlumniData from "../models/AlumniData.js"
 
 // REGISTER USER
 
-export const registerUser = async (req,res)=>{
+export const registerUser = async (req, res) => {
 
- try{
+    try {
 
- const {college_id,name,email,password,branch,passout_year
-} = req.body
+        const { name, uid, email, password, college_id } = req.body
 
- // CHECK EXCEL DATA RECORD
-const record = await AlumniData.findOne({
-  college_id,
-  name,
-  branch,
-  passout_year
-})
- if(!record){
-  return res.status(400).json({
-   message:"College record not found. Cannot register"
-  })
- }
+        // VALIDATE REQUIRED FIELDS
+        if (!name || !uid || !email || !password || !college_id) {
+            return res.status(400).json({
+                message: "Please provide name, uid, email, password, and college_id"
+            })
+        }
 
-const userExists = await User.findOne({
- $or:[
-  {college_id},
-  {email}
- ]
-})
+        // CHECK IF USER EXISTS IN AUTHORIZED DATABASE (AlumniData)
+        const isAuthorized = await AlumniData.findOne({
+            $or: [
+                { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+                { college_id: { $regex: new RegExp(`^${college_id}$`, 'i') } },
+                { UID_No_: { $regex: new RegExp(`^${uid}$`, 'i') } },
+                { name: { $regex: new RegExp(`^${name}$`, 'i') } }
+            ]
+        })
 
- if(userExists){
-  return res.status(400).json({message:"User already exists"})
- }
+        if (!isAuthorized) {
+            return res.status(403).json({
+                message: "You are not authorized to register. Ensure your details match the university records."
+            })
+        }
 
- const salt = await bcrypt.genSalt(10)
- const hashedPassword = await bcrypt.hash(password,salt)
+        const userExists = await User.findOne({
+            $or: [
+                { uid },
+                { email },
+                { college_id }
+            ]
+        })
 
-const currentYear = new Date().getFullYear()
+        if (userExists) {
+            return res.status(400).json({ message: "User already exists" })
+        }
 
-const year = Number(passout_year)
+        const salt = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(password, salt)
 
-let role
+        // CALCULATE ROLE AUTOMATICALLY based on college_id (First 4 digits = Admission Year)
+        let calculatedRole = "student"
+        const admissionYear = parseInt(college_id.substring(0, 4), 10)
+        const currentYear = new Date().getFullYear()
 
-if(year < currentYear){
- role = "alumni"
-}else{
- role = "student"
-}
+        if (!isNaN(admissionYear)) {
+            if (currentYear - admissionYear >= 4) {
+                calculatedRole = "alumni"
+            }
+        }
 
- const user = await User.create({
-  college_id,
-  name,
-  email,
-  password:hashedPassword,
-  branch,
-  passout_year,
-  role
- })
+        const user = await User.create({
+            name,
+            uid,
+            email,
+            password: hashedPassword,
+            college_id,
+            role: calculatedRole
+        })
 
-res.status(201).json({
- message:"User registered successfully",
- user:{
-  id:user._id,
-  name:user.name,
-  email:user.email,
-  role:user.role
- }
-})
- }catch(error){
-  res.status(500).json({message:error.message})
- }
+        res.status(201).json({
+            message: "User registered successfully",
+            user: {
+                id: user._id,
+                name: user.name,
+                uid: user.uid,
+                email: user.email,
+                college_id: user.college_id,
+                role: user.role
+            }
+        })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
 
 }
 
 
 // LOGIN USER
 
-export const loginUser = async (req,res)=>{
+export const loginUser = async (req, res) => {
 
- try{
+    try {
 
-const {email,password} = req.body
+        const { email, password } = req.body
 
-const user = await User.findOne({
- email
-})
+        const user = await User.findOne({
+            email
+        })
 
- if(!user){
-  return res.status(404).json({message:"User not found"})
- }
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
+        console.log(password, user.password)
+        const isMatch = await bcrypt.compare(password, user.password)
 
- const isMatch = await bcrypt.compare(password,user.password)
+        if (!isMatch) {
+            return res.status(401).json({ message: "Invalid credentials" })
+        }
 
- if(!isMatch){
-  return res.status(401).json({message:"Invalid credentials"})
- }
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        )
 
- const token = jwt.sign(
-  {id:user._id},
-  process.env.JWT_SECRET,
-  {expiresIn:"7d"}
- )
+        res.json({
+            token,
+            user
+        })
 
- res.json({
-  token,
-  user
- })
-
- }catch(error){
-  res.status(500).json({message:error.message})
- }
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
 
 
 }
 
-export const searchAlumni = async (req,res)=>{
- try{
-
-  const {name, branch, UID_No_} = req.body
-
-  const alumni = await AlumniData.findOne({
-    name,
-    // passout_year,
-    branch,
-    UID_No_
-  })
-
-  if(!alumni){
-   return res.status(404).json({message:"Record not found"})
-  }
-
-  res.json(alumni)
-
- }catch(error){
-  res.status(500).json({message:error.message})
- }
+export const searchAlumni = async (req, res) => {
+    try {
+        const { query } = req.query
+        const users = await User.find({
+            role: { $in: ["alumni", "student"] },
+            $or: [
+                { name: { $regex: query, $options: 'i' } },
+                { company: { $regex: query, $options: 'i' } },
+                { branch: { $regex: query, $options: 'i' } }
+            ]
+        }).select('-password')
+        res.json(users)
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
 }
 
-export const registerOldAlumni = async (req,res)=>{
+export const getAllAlumni = async (req, res) => {
+    try {
+        const users = await User.find({ role: { $in: ["alumni", "student"] } }).select('-password')
+        res.json(users)
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
 
- try{
+export const registerOldAlumni = async (req, res) => {
 
- const {name,email,password,branch,aadhar_no,passout_year} = req.body
+    try {
 
- // CHECK ALUMNI DATABASE
+        const { name, uid, email, password, college_id } = req.body
 
- const record = await AlumniData.findOne({
-  name,
-  UID_No_:aadhar_no
+        // VALIDATE REQUIRED FIELDS
+        if (!name || !uid || !email || !password || !college_id) {
+            return res.status(400).json({
+                message: "Please provide name, uid, email, password, and college_id"
+            })
+        }
 
- })
+        // CHECK USER ALREADY EXISTS
 
- if(!record){
-  return res.status(404).json({
-   message:"Alumni record not found"
-  })
- }
+        // CHECK IF USER EXISTS IN AUTHORIZED DATABASE (AlumniData)
+        const isAuthorized = await AlumniData.findOne({
+            $or: [
+                { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+                { college_id: { $regex: new RegExp(`^${college_id}$`, 'i') } },
+                { UID_No_: { $regex: new RegExp(`^${uid}$`, 'i') } },
+                { name: { $regex: new RegExp(`^${name}$`, 'i') } }
+            ]
+        })
 
- // CHECK USER ALREADY EXISTS
+        if (!isAuthorized) {
+            return res.status(403).json({
+                message: "You are not authorized to register. Ensure your details match the university records."
+            })
+        }
 
- const userExists = await User.findOne({email})
+        const userExists = await User.findOne({
+            $or: [
+                { uid },
+                { email },
+                { college_id }
+            ]
+        })
 
- if(userExists){
-  return res.status(400).json({
-   message:"User already registered"
-  })
- }
+        if (userExists) {
+            return res.status(400).json({
+                message: "User already registered"
+            })
+        }
 
- // HASH PASSWORD
+        // HASH PASSWORD
 
- const salt = await bcrypt.genSalt(10)
- const hashedPassword = await bcrypt.hash(password,salt)
+        const salt = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(password, salt)
 
- // CREATE ACCOUNT
+        // CREATE ACCOUNT
 
- const user = await User.create({
-  name,
-  email,
-  password:hashedPassword,
-  branch,
-  passout_year,
-  role:"alumni"
- })
+        const user = await User.create({
+            name,
+            uid,
+            email,
+            password: hashedPassword,
+            college_id,
+            role: "alumni"
+        })
 
- res.status(201).json({
-  message:"Old alumni registered successfully",
-  user:{
-   id:user._id,
-   name:user.name,
-   email:user.email,
-   role:user.role
-  }
- })
+        res.status(201).json({
+            message: "Old alumni registered successfully",
+            user: {
+                id: user._id,
+                name: user.name,
+                uid: user.uid,
+                email: user.email,
+                college_id: user.college_id,
+                role: user.role
+            }
+        })
 
- }catch(error){
-  res.status(500).json({message:error.message})
- }
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
 
 }
 
@@ -207,54 +237,54 @@ export const registerOldAlumni = async (req,res)=>{
 // GET PROFILE
 export const getProfile = async (req, res) => {
 
- try {
+    try {
 
-  const user = await User.findById(req.user._id).select("-password")
+        const user = await User.findById(req.user._id).select("-password")
 
-  if (!user) {
-   return res.status(404).json({ message: "User not found" })
-  }
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
 
-  res.json(user)
+        res.json(user)
 
- } catch (error) {
-  res.status(500).json({ message: error.message })
- }
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
 
 }
 
 // UPDATE PROFILE
 export const updateProfile = async (req, res) => {
 
- try {
+    try {
 
-  const { name, bio, linkedin, company, job_role, location, profile_pic } = req.body
+        const { name, bio, linkedin, company, job_role, location, profile_pic } = req.body
 
-  const user = await User.findByIdAndUpdate(
-   req.user._id,
-   {
-    name: name || req.user.name,
-    bio: bio || req.user.bio,
-    linkedin: linkedin || req.user.linkedin,
-    company: company || req.user.company,
-    job_role: job_role || req.user.job_role,
-    location: location || req.user.location,
-    profile_pic: profile_pic || req.user.profile_pic
-   },
-   { new: true }
-  ).select("-password")
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                name: name || req.user.name,
+                bio: bio || req.user.bio,
+                linkedin: linkedin || req.user.linkedin,
+                company: company || req.user.company,
+                job_role: job_role || req.user.job_role,
+                location: location || req.user.location,
+                profile_pic: profile_pic || req.user.profile_pic
+            },
+            { new: true }
+        ).select("-password")
 
-  if (!user) {
-   return res.status(404).json({ message: "User not found" })
-  }
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
 
-  res.json({
-   message: "Profile updated successfully",
-   user
-  })
+        res.json({
+            message: "Profile updated successfully",
+            user
+        })
 
- } catch (error) {
-  res.status(500).json({ message: error.message })
- }
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
 
 }

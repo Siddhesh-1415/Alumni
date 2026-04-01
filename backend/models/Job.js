@@ -30,6 +30,12 @@ const jobSchema = new mongoose.Schema({
  posted_by:{
   type:mongoose.Schema.Types.ObjectId,
   ref:"User"
+ },
+
+ applications:{
+  type:[mongoose.Schema.Types.ObjectId],
+  ref:"User",
+  default:[]
  }
 
 },{timestamps:true})
