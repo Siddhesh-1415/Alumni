@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import ProfilePage from './pages/ProfilePage'
@@ -11,6 +12,8 @@ import JobApplicantsPage from './pages/JobApplicantsPage'
 import EventsPage from './pages/EventsPage'
 import EventRegistrantsPage from './pages/EventRegistrantsPage'
 import ChatPage from './pages/ChatPage'
+import LandingPage from './pages/LandingPage'
+import ChatBot from './components/ChatBot'
 import './styles/index.css'
 import io from 'socket.io-client'
 import config from './config/config'
@@ -181,6 +184,13 @@ function App() {
           }
         />
         <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? <Navigate to={user?.role === 'admin' ? '/admin-dashboard' : '/dashboard'} /> :
+            <ForgotPasswordPage />
+          }
+        />
+        <Route
           path="/register"
           element={
             isAuthenticated ? <Navigate to={user?.role === 'admin' ? '/admin-dashboard' : '/dashboard'} /> :
@@ -257,10 +267,13 @@ function App() {
           element={
             isAuthenticated ?
             (user?.role === 'admin' ? <Navigate to="/admin-dashboard" /> : <Navigate to="/dashboard" />) :
-            <Navigate to="/login" />
+            <LandingPage />
           }
         />
       </Routes>
+
+      {/* ─── Global Floating ChatBot widget ─────────────────────────────── */}
+      <ChatBot user={user} isAuthenticated={isAuthenticated} />
     </Router>
   )
 }

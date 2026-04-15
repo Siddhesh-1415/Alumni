@@ -1,0 +1,6 @@
+uid,college_id,email,name,branch,passout_year
+U001,CLG1001,john.doe@example.com,John Doe,Computer Science,3
+U002,CLG1002,jane.smith@example.com,Jane Smith,Electronics,2
+U003,CLG1003,rahul.verma@example.com,Rahul Verma,Mechanical,4
+U004,CLG1004,anita.patel@example.com,Anita Patel,Civil,1
+U005,CLG1005,arjun.kumar@example.com,Arjun Kumar,Information Technology,3

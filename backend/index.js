@@ -13,10 +13,13 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import { initializeMessageSocket } from "./socket/messageSocket.js";
+import csvRoutes from "./routes/csvRoutes.js";
+import publicRoutes from "./routes/publicRoutes.js";
+import { initializeMessageSocket } from "./socket/messageSocket.js"
+import chatbotRoutes from "./routes/chatbotRoutes.js";
 
 // Load env variables
-dotenv.config();
+dotenv.config({"path":"C:\\Users\\tambe\\OneDrive\\Desktop\\BC\\Alumni\\backend\\.env"});
 
 // Connect Database
 connectDB();
@@ -35,7 +38,10 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/users", authRoutes);
+app.use("/api/csv", csvRoutes);
+app.use("/api/public", publicRoutes)
+app.use("/api/users", authRoutes)
+app.use("/api/chatbot", chatbotRoutes)
 // Test Route
 app.get("/", (req, res) => {
   res.send("Alumni Portal API Running");

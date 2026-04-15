@@ -9,6 +9,17 @@ import {
   updateUserRole,
   searchUsers,
 } from "../controllers/adminController.js"
+import {
+  getAllFeatures,
+  createFeature,
+  updateFeature,
+  deleteFeature,
+  toggleFeature,
+} from "../controllers/landingFeatureController.js"
+import {
+  getAdminChatbotSettings,
+  updateChatbotSettings,
+} from "../controllers/chatbotController.js"
 import multer from "multer"
 
 const router = express.Router()
@@ -54,5 +65,16 @@ router.put("/users/:id/role", protect, authorizeRoles("admin"), updateUserRole)
 
 // ✅ Search users (admin only)
 router.get("/search-users", protect, authorizeRoles("admin"), searchUsers)
+
+// ── Landing Page Features (admin CRUD) ─────────────────────────────────────
+router.get("/landing-features", protect, authorizeRoles("admin"), getAllFeatures)
+router.post("/landing-features", protect, authorizeRoles("admin"), createFeature)
+router.put("/landing-features/:id", protect, authorizeRoles("admin"), updateFeature)
+router.delete("/landing-features/:id", protect, authorizeRoles("admin"), deleteFeature)
+router.patch("/landing-features/:id/toggle", protect, authorizeRoles("admin"), toggleFeature)
+
+// ── Chatbot Settings (admin) ────────────────────────────────────────────────
+router.get("/chatbot-settings", protect, authorizeRoles("admin"), getAdminChatbotSettings)
+router.put("/chatbot-settings", protect, authorizeRoles("admin"), updateChatbotSettings)
 
 export default router

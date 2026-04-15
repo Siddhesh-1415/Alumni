@@ -12,15 +12,25 @@ const config = {
       alumni: '/api/auth/alumni',
       searchAlumni: '/api/auth/search-alumni',
       profile: '/api/auth/profile',
+      forgotPasswordSendOtp: '/api/auth/forgot-password/send-otp',
+      forgotPasswordSendPhoneOtp: '/api/auth/forgot-password/send-phone-otp',
+      forgotPasswordVerifyOtp: '/api/auth/forgot-password/verify-otp',
+      forgotPasswordReset: '/api/auth/forgot-password/reset',
     },
     admin: {
       stats: '/api/admin/stats',
       users: '/api/admin/users',
-      uploadStudents: '/api/admin/upload-students',
+      uploadStudents: '/api/csv/upload-allowed-users', // ← new CSV endpoint
+      allowedUsers: '/api/csv/allowed-users',
       searchUsers: '/api/admin/search-users',
+      landingFeatures: '/api/admin/landing-features',
     },
     jobs: '/api/jobs',
     events: '/api/events',
+    public: {
+      stats: '/api/public/stats',
+      features: '/api/public/features',
+    },
     messages: {
       conversations: '/api/messages/conversations',
       send: '/api/messages/send',
@@ -32,6 +42,13 @@ const config = {
       read: (id) => `/api/notifications/${id}/read`,
       delete: (id) => `/api/notifications/${id}`,
       clear: '/api/notifications/clear',
+    },
+    chatbot: {
+      message: '/api/chatbot/message',
+      history: '/api/chatbot/history',
+      clearHistory: '/api/chatbot/history',
+      settings: '/api/chatbot/settings',
+      adminSettings: '/api/admin/chatbot-settings',
     },
   },
 

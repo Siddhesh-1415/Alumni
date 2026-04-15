@@ -7,6 +7,10 @@ import {
  registerOldAlumni,
     getProfile,
     updateProfile,
+    sendOtp,
+    verifyOtp,
+    resetPassword,
+    sendPhoneOtp,
 } from "../controllers/authController.js"
 import protect from "../middleware/authMiddleware.js"
 
@@ -32,6 +36,12 @@ router.get("/profile", protect, getProfile)
 
 // update profile (protected)
 router.put("/profile", protect, updateProfile)
+
+// ─── Forgot Password ─────────────────────────────────────────────────────────
+router.post("/forgot-password/send-otp", sendOtp)             // Email OTP
+router.post("/forgot-password/send-phone-otp", sendPhoneOtp)  // SMS OTP
+router.post("/forgot-password/verify-otp", verifyOtp)
+router.post("/forgot-password/reset", resetPassword)
 
 
 export default router

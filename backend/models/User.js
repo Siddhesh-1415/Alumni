@@ -52,8 +52,13 @@ linkedin:String,
 
 bio:String,
 
-profile_pic:String
+profile_pic:String,
 
+phone: { type: String, default: null, sparse: true },
+
+resetOtp: { type: String, default: null },
+
+resetOtpExpiry: { type: Date, default: null }
 
 
 },
